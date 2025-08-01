@@ -1,0 +1,15 @@
+datalake:
+  outputs:
+
+    dev:
+      type: trino
+      method: none  
+      user: admin
+      password: ''
+      database: iceberg
+      host: localhost
+      port: 8080
+      schema: raw
+      threads: 4
+
+  target: dev
