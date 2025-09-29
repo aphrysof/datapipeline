@@ -1,21 +1,8 @@
 services:
-  controller:
-    image: 'trinodb/trino'
-    hostname: trino
-    volumes:
-      - ./etc/catalog:/etc/trino/catalog
-    ports:
-      - '8080:8080'  # Keep Trino on 8080
-    depends_on:
-      object-store:
-        condition: service_healthy
-      iceberg_postgres:
-        condition: service_started
-    networks:
-      - trinio-db_default
 
-  object-store:
+  minio:
     image: minio/minio
+    container_name: minio
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password
@@ -24,30 +11,16 @@ services:
       - 9000:9000
     command: ["server", "/data", "--console-address", ":9001"]
     healthcheck:
-      test: ["CMD-SHELL", "mc alias set minio http://localhost:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} && mc mb minio/warehouse && mc anonymous set public minio/warehouse"]
+      test: ["CMD-SHELL", "mc alias set minio http://localhost:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} && mc mb minio/airflow && mc version enable minio/airflow"]
       interval: 2s
       timeout: 2s
       retries: 5
-    networks:
-      - trinio-db_default
 
   # PostgreSQL service for Iceberg
-  iceberg_postgres:
-    image: postgres:14
-    environment:
-      POSTGRES_DB: iceberg
-      POSTGRES_USER: etl
-      POSTGRES_PASSWORD: demopass
-    ports:
-      - "5433:5432"
-    volumes:
-      - iceberg-db-volume:/var/lib/postgresql/data
-    networks:
-      - trinio-db_default
-
-volumes:
-  iceberg-db-volume:
-
-networks:
-  trinio-db_default:
-    driver: bridge
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    depends_on:
+      - minio
+    command: tunnel --url http://minio:9000
+    restart: unless-stopped

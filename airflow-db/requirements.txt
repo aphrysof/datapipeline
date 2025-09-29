@@ -1,3 +1,7 @@
-apache-airflow-providers-trino
-dbt-core
-dbt-trino
+duckdb
+apache-airflow-providers-amazon
+pytest
+pytest-black
+flake8
+sqlfluff
+click
